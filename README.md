@@ -1,0 +1,240 @@
+# Supavisor
+
+![License](https://img.shields.io/badge/license-MIT-green)
+![Node](https://img.shields.io/badge/node-%3E%3D18-blue)
+![npm](https://img.shields.io/npm/v/supavisor)
+
+Fast SQL linter for Supabase migrations - your database supervisor
+
+## Quick Start
+
+Get running in **under 2 minutes**:
+
+```bash
+npm install -g supavisor
+```
+
+```bash
+supavisor supabase/migrations/**/*.sql
+```
+
+## Features
+
+- **16 Security Rules** - Detect RLS issues, exposed auth tables, security definer views
+- **Performance Checks** - Find missing indexes, duplicate indexes, missing primary keys
+- **Auto-fix** - Automatically fix common issues with `--fix` flag
+- **Project Mode** - Analyze migrations across multiple files
+- **Fast** - Powered by libpg-query for accurate SQL parsing
+- **Configurable** - Customize rules via `.supavisorrc.json`
+
+## Installation
+
+### Prerequisites
+
+- [ ] Node.js 18+ ([download](https://nodejs.org))
+- [ ] npm 9+
+
+### Setup
+
+```bash
+# Install globally
+npm install -g supavisor
+
+# Or as dev dependency
+npm install --save-dev supavisor
+```
+
+### Configuration
+
+```bash
+supavisor --init
+```
+
+This creates `.supavisorrc.json` with default settings.
+
+## Usage
+
+### Basic Example
+
+```bash
+# Lint all migrations
+supavisor supabase/migrations/**/*.sql
+
+# Lint with auto-fix
+supavisor supabase/migrations/**/*.sql --fix
+
+# Project mode (analyze across files)
+supavisor supabase/migrations/**/*.sql --project
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--fix` | Automatically fix issues where possible |
+| `--project` / `-p` | Enable project mode (cross-file analysis) |
+| `--json` | Output results as JSON |
+| `--quiet` | Only show errors and warnings |
+| `--init` | Create default config file |
+| `--help` / `-h` | Show help |
+| `--version` / `-v` | Show version |
+
+### Configuration
+
+Example `.supavisorrc.json`:
+
+```json
+{
+  "include": ["supabase/migrations/**/*.sql"],
+  "ignore": ["**/node_modules/**"],
+  "rules": {
+    "require-rls": "error",
+    "no-table-without-pk": "error",
+    "no-fk-without-index": "warning",
+    "no-sensitive-columns": "warning"
+  }
+}
+```
+
+**Rule severities:**
+- `"error"` - Fails CI/CD (exit code 1)
+- `"warning"` - Shows warning but passes
+- `"off"` - Disables rule
+
+### Inline Ignores
+
+Disable rules inline in SQL files:
+
+```sql
+-- supavisor-disable-next-line no-table-without-pk
+CREATE TABLE logs (
+  id serial,
+  message text
+);
+
+-- supavisor-disable require-rls
+CREATE TABLE temp_data (
+  id uuid primary key,
+  data jsonb
+);
+-- supavisor-enable require-rls
+```
+
+### Programmatic Usage
+
+```typescript
+import { lint, loadConfig } from 'supavisor'
+
+const config = await loadConfig()
+const report = await lint({
+  files: ['supabase/migrations/**/*.sql'],
+  rules: config.rules,
+  projectMode: true
+})
+
+console.log(report)
+```
+
+## Rules
+
+### Security Rules
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| `require-rls` | error | Tables in public schema must have RLS enabled |
+| `auth-users-exposed` | error | Prevent exposing auth.users table |
+| `no-security-definer-view` | error | Views should not use SECURITY DEFINER |
+| `rls-references-user-metadata` | error | RLS policies should use auth.uid(), not user metadata |
+| `policy-exists-rls-disabled` | error | Policies exist but RLS is disabled |
+| `rls-policy-always-true` | warning | RLS policy always evaluates to true |
+| `multiple-permissive-policies` | warning | Multiple PERMISSIVE policies may conflict |
+| `rls-enabled-no-policy` | warning | RLS enabled but no policies defined |
+
+### Performance Rules
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| `no-table-without-pk` | error | Tables must have a primary key |
+| `no-fk-without-index` | warning | Foreign keys should have corresponding indexes |
+| `duplicate-index` | warning | Detect duplicate or redundant indexes |
+
+### Best Practices
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| `no-extension-in-public` | warning | Extensions should not be in public schema |
+| `no-sensitive-columns` | warning | Detect potentially sensitive column names |
+| `function-search-path` | warning | Functions should set search_path for security |
+| `ban-materialized-view-public` | warning | Materialized views in public may expose data |
+| `ban-foreign-table-public` | warning | Foreign tables in public may expose data |
+
+## Integration
+
+### GitHub Actions
+
+```yaml
+name: Lint Migrations
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install -g supavisor
+      - run: supavisor supabase/migrations/**/*.sql
+```
+
+### Pre-commit Hook
+
+```bash
+# .husky/pre-commit
+#!/bin/sh
+npx supavisor supabase/migrations/**/*.sql
+```
+
+### Package.json Script
+
+```json
+{
+  "scripts": {
+    "lint:sql": "supavisor supabase/migrations/**/*.sql",
+    "lint:sql:fix": "supavisor supabase/migrations/**/*.sql --fix"
+  }
+}
+```
+
+## API
+
+Supavisor exposes modules for programmatic use:
+
+```typescript
+// Core
+import { lint, lintWithFixes, parseFiles } from 'supavisor'
+
+// Rules
+import { allRules, ruleMap } from 'supavisor/linter'
+
+// Config
+import { loadConfig, defineConfig } from 'supavisor/config'
+
+// Parser
+import { parseSQL, getTableName } from 'supavisor/parser'
+```
+
+## Why Supavisor?
+
+- **Security First** - Catches RLS misconfigurations before production
+- **Performance** - Identifies missing indexes and schema issues
+- **Developer Friendly** - Auto-fix common issues
+- **Supabase Native** - Built specifically for Supabase conventions
+- **Fast** - Uses libpg-query for accurate parsing
+- **Extensible** - Create custom rules
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+

@@ -1,0 +1,38 @@
+# Source files
+src/
+test/
+*.test.ts
+*.spec.ts
+
+# Config files
+tsconfig.json
+.supavisorrc.json
+.supavisorrc
+
+# Development
+.vscode/
+.idea/
+*.log
+node_modules/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Documentation (keep README.md)
+CONTRIBUTING.md
+docs/
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
