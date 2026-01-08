@@ -12,7 +12,7 @@ async function main() {
   if (args.includes('--version') || args.includes('-v')) { console.log('supavisor v0.2.0'); process.exit(0) }
   if (args.includes('--init')) { await initConfig(); process.exit(0) }
 
-  const fix = args.includes('--fix')
+  const fix = args.includes('--generate-fix')
   const json = args.includes('--json')
   const quiet = args.includes('--quiet')
   const projectMode = args.includes('--project') || args.includes('-p')
@@ -31,7 +31,10 @@ async function main() {
     if (fix && fixes.size > 0) {
       for (const [file, content] of fixes) {
         await writeFile(file, content, 'utf-8')
-        if (!quiet && !json) console.log(pc.green(`  ✔ Fixed: ${file}`))
+        if (!quiet && !json) {
+          console.log(pc.green(`\n  ✔ Generated fix migration: ${file}`))
+          console.log(pc.dim(`    Review the migration before applying it to your database`))
+        }
       }
       if (!quiet && !json) console.log()
     }

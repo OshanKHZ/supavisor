@@ -35,7 +35,7 @@ export function printSummary(errors: number, warnings: number, fixable: number, 
   }
 
   console.log(`  ${parts.join(', ')}`)
-  if (fixable > 0 && !didFix) console.log(pc.dim(`  ${fixable} fixable with --fix\n`))
+  if (fixable > 0 && !didFix) console.log(pc.dim(`  ${fixable} fixable with --generate-fix\n`))
   else console.log()
 }
 
@@ -47,13 +47,13 @@ export function printHelp(): void {
     supavisor [files] [options]
 
   ${pc.dim('Options:')}
-    --init         Create a .supavisorrc.json config file
-    -p, --project  Analyze all migrations together (enables all rules)
-    --fix          Apply automatic fixes where possible
-    --json         Output results as JSON
-    --quiet        Only show errors (no warnings)
-    -h, --help     Show this help message
-    -v             Show version
+    --init           Create a .supavisorrc.json config file
+    -p, --project    Analyze all migrations together (enables all rules)
+    --generate-fix   Generate new migration file with fixes
+    --json           Output results as JSON
+    --quiet          Only show errors (no warnings)
+    -h, --help       Show this help message
+    -v               Show version
 
   ${pc.dim('Modes:')}
     Default:       Runs file-scoped rules (10 rules) - fast, for CI
@@ -71,7 +71,11 @@ export function printHelp(): void {
     supavisor                                 # Lint with file-scoped rules
     supavisor --project                       # Lint with all rules (recommended)
     supavisor ./migrations/*.sql              # Lint specific files
-    supavisor "**/*.sql" --fix                # Lint and fix all SQL files
+    supavisor --generate-fix                  # Generate fix migration
+
+  ${pc.dim('⚠️  Important:')}
+    ${pc.yellow('Never modify applied migrations!')} Always create new migration files.
+    Use --generate-fix to create a new migration with fixes instead.
 
   ${pc.dim('Rules:')}
     ${pc.cyan('File-scoped')} ${pc.dim('(always run):')}
